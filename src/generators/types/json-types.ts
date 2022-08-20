@@ -1,5 +1,3 @@
-import exp = require("constants");
-
 export type Authority = "both"|"server"|"client";
 
 export function toLongAuthority(authority: Authority): string {
@@ -45,12 +43,13 @@ export interface AuthorityOwned extends Document {
 }
 
 export interface Class extends AuthorityOwned {
-  constructor: Value[];
+  constructor?: Value[];
   properties: Value[];
   functions: Function[];
   static_functions: Function[];
   events: Event[];
   inheritance?: string[];
+  operators?: Operator[];
 }
 
 export interface Function extends AuthorityOwned {
@@ -61,8 +60,31 @@ export interface Function extends AuthorityOwned {
 export interface Value extends Document {
   type: string;
   default: string;
+  table_properties?: TableProp[];
 }
 
 export interface Event extends AuthorityOwned {
   arguments: Value[];
+}
+
+export interface TableProp {
+  name: string;
+  type: string;
+}
+
+export interface Operator {
+  name: string;
+  operator: string;
+  lhs: string;
+  rhs: string;
+  return: string;
+  description?: string;
+}
+
+export interface TransformedValue {
+  type: string;
+  name: string;
+  default?: string;
+  isVararg: boolean;
+  description: string;
 }

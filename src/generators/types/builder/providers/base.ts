@@ -6,9 +6,9 @@ export abstract class Commentable implements DeclarationProvider {
   protected readonly builder: StringBuilder;
   private readonly jsdocProvider: JsDocProvider;
 
-  protected constructor() {
+  protected constructor(withIntent: boolean = false) {
     this.builder = new StringBuilder();
-    this.jsdocProvider = new JsDocProvider();
+    this.jsdocProvider = new JsDocProvider(withIntent);
   }
 
   public jsdoc(cb: (jsdoc: JsDocProvider) => void): Commentable {

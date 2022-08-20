@@ -13,12 +13,12 @@ export default class JsDocProvider implements DeclarationProvider {
 
   public line(value: string = ""): JsDocProvider {
     this.hasLines = true;
-    this.builder.append(this.intent() + " * " + value).newLine();
+    this.builder.append(this.intent() + " * " + (value || "")).newLine();
     return this;
   }
 
   public param(name: string, type: string, description: string, value?: string): JsDocProvider {
-    this.line(`@param ${name} {@link ${type}} ${description}. ${value ? " Defaults to " + value : ""}`);
+    this.line(`@param ${name} {@link ${type}} ${description || ''}. ${value ? "Defaults to " + value : ""}`);
     return this;
   }
 

@@ -1,9 +1,10 @@
 import {Command} from "@oclif/core";
-import {Class, Enum} from "./json-types";
-import * as fs from "fs";
+import {Class, Enum, TransformedValue, Value, Function} from "./json-types";
 import {DeclarationBuilder} from "./builder";
-import  {ListrContext} from "listr";
+import {ListrContext} from "listr";
 import {Observable, Subscriber} from "rxjs";
+import * as fs from "fs";
+import {StringBuilder} from "./builder/base";
 
 const fetch = require("node-fetch");
 const Listr = require("listr");
@@ -13,14 +14,6 @@ export interface TypesGeneratorData {
   skip: boolean;
   bleeding: boolean;
 }
-
-/*
-  Some notes:
-  - table which has no table_props needs to be transformed to any
-  - table[] which has no table_props needs to be transformed to any[]
-
-
- */
 
 export class TypesGenerator {
 
@@ -76,6 +69,7 @@ export class TypesGenerator {
     } catch (e) {
       this.command.error(<Error>e);
     }
+
   }
 
   private generateClass(c: Class, subscriber: Subscriber<string>, title: string) {
@@ -96,7 +90,91 @@ export class TypesGenerator {
         if (c.authority) {
           jsdoc.authority(c.authority);
         }
+
+        if (c.constructor) {
+          jsdoc.customCtor(c.name);
+        }
       });
+
+      if (c.properties) {
+        for (const property of c.properties) {
+          const transformed = this.transformValue(property);
+          classProvider.prop(transformed.name, transformed.type, jsdoc => {
+            jsdoc.line(transformed.description);
+          });
+        }
+      }
+
+      if (c.constructor && c.constructor.map) {
+        classProvider.function("constructor", false, ctorProvider => {
+          const transformedParams: TransformedValue[] = c.constructor!.map(param => this.transformValue(param));
+
+          ctorProvider.jsdoc(jsdoc => {
+            for (const transformedParam of transformedParams) {
+              jsdoc.param(transformedParam.name, transformedParam.type, transformedParam.description, transformedParam.isVararg ? undefined : transformedParam.default);
+            }
+          });
+
+          for (const transformedParam of transformedParams) {
+            if (transformedParam.isVararg) {
+              ctorProvider.varargs(transformedParam.name, transformedParam.type);
+            } else {
+              ctorProvider.param(transformedParam.name, transformedParam.type, !!transformedParam.default);
+            }
+          }
+
+          ctorProvider.disableReturn();
+        });
+      }
+
+      const generateFunctions = (isStatic: boolean, functions: Function[]) => {
+        for (const f of functions) {
+          classProvider.function(f.name, isStatic, funcProvider => {
+            const transformedParams: TransformedValue[] = !f.parameters ? [] : f.parameters.map(param => this.transformValue(param));
+            const transformedReturn: TransformedValue[] = !f.return ? [] : f.return.map(ret => this.transformValue(ret, true));
+
+            funcProvider.jsdoc(jsdoc => {
+              if (f.description_long || f.description) {
+                jsdoc.line(f.description_long || f.description);
+              }
+
+              if (f.authority) {
+                jsdoc.authority(f.authority);
+              }
+
+              for (const transformedParam of transformedParams) {
+                jsdoc.param(transformedParam.name, transformedParam.type, transformedParam.description, transformedParam.isVararg ? undefined : transformedParam.default);
+              }
+
+              if (isStatic) {
+                jsdoc.noSelf();
+              }
+            });
+
+            for (const transformedParam of transformedParams) {
+              if (transformedParam.isVararg) {
+                funcProvider.varargs(transformedParam.name, transformedParam.type);
+              } else {
+                funcProvider.param(transformedParam.name, transformedParam.type, !!transformedParam.default);
+              }
+            }
+
+            if (transformedReturn.length === 1) {
+              funcProvider.returns(transformedReturn[0].type);
+            } else if (transformedReturn.length > 1) {
+              funcProvider.returns(`LuaMultiReturn<[${transformedReturn.map(ret => ret.type).join(", ")}]>`);
+            }
+          });
+        }
+      }
+
+      if (c.functions) {
+        generateFunctions(false, c.functions);
+      }
+
+      if (c.static_functions) {
+        generateFunctions(true, c.static_functions);
+      }
     });
   }
 
@@ -124,18 +202,75 @@ export class TypesGenerator {
     return this.result[name];
   }
 
-  private async saveToFile() {
-    for (const file in this.result) {
-      const path = `${this.data.output}/${file}.d.ts`;
-      if (this.data.skip) {
-        if (fs.existsSync(path)) {
-          continue;
-        }
+  private transformValue(value: Value, isRet: boolean = false): TransformedValue {
+    const description = value.description_long || value.description;
+    let defaultValue = !value.default ? undefined : (value.default === "nil" ? "null" : value.default);
+
+    let type = value.type;
+    if (isRet) {
+      if (value.type.endsWith("?")) {
+        defaultValue = "true";
+        type = value.type.substring(0, value.type.length - 1) + "|undefined";
       }
+    }
+
+    if (type.includes("table")) {
+      if (value.table_properties) {
+        const table = value.table_properties.map(prop => `${prop.name}: ${prop.type}`).join(", ");
+        type = type.replace("table", `({${table}})`);
+      } else {
+        type = type.replace("table", "any");
+      }
+    } else if (type.startsWith("function")) {
+      type = type.replace("function", "Function");
+    } else if (type.startsWith("iterator")) {
+      type = type.replace("iterator", "LuaPairsIterable<number, Actor>");
+    } else if (type.includes("Path")) {
+      type = "string" + (type.endsWith("[]") ? "[]" : "");
+    }
+
+    const isVararg = value.name ? value.name.endsWith("...") : false;
+    let name = value.name;
+    if (isVararg) {
+      name = name.substring(0, name.length - 3);
+    }
+
+    if (name === "function") {
+      name = "func";
+    }
+
+    return {
+      name,
+      type,
+      description,
+      isVararg,
+      default: defaultValue
+    };
+  }
+
+  private async saveToFile() {
+    const fileBuilder = new StringBuilder();
+    fileBuilder.append(`// Generated by Nanos TypeScript CLI (c) ${new Date().getFullYear()} NanosWorldTS https://github.com/NanosWorldTS`).newLine().newLine();
+
+    for (const file in this.result) {
+      fileBuilder.append(`//region ${file}`).newLine().newLine();
 
       const content = this.result[file].build();
-      await fs.promises.writeFile(path, content);
+      fileBuilder.append(content).newLine().newLine();
+
+      fileBuilder.append(`//endregion ${file}`).newLine();
     }
+
+    fileBuilder.newLine().newLine().append(`// Generated by Nanos TypeScript CLI (c) ${new Date().getFullYear()} NanosWorldTS https://github.com/NanosWorldTS`);
+
+    const path = `${this.data.output}/nanosts.d.ts`;
+    if (this.data.skip) {
+      if (fs.existsSync(path)) {
+        return;
+      }
+    }
+
+    await fs.promises.writeFile(path, fileBuilder.toString());
   }
 
   private async getLatestJsonObjects(): Promise<({file: string, data: any})[]> {
