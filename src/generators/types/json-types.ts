@@ -24,6 +24,16 @@ export function getMostValuableInheritance(inheritances: string[]): string|null 
   return inheritances.length > 0 ? inheritances[0] : null;
 }
 
+export function getEventInheritance(inheritances: string[]): string|undefined {
+  if (inheritances.length <= 0) {
+    return undefined;
+  }
+  if (inheritances.includes("Pickable")) {
+    return "Pickable";
+  }
+  return "Actor";
+}
+
 export interface Enum {
   [name: string]: ({
     key: string;

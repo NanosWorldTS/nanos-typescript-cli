@@ -26,8 +26,11 @@ export class DeclarationBuilder {
     return this;
   }
 
-  public events(typeName: string, events: Event[]) {
+  public events(typeName: string, events: Event[], inheritance: string|undefined) {
     const eventTypesUnion: string[] = ["string"];
+    if (inheritance) {
+      eventTypesUnion.push(inheritance + "Event");
+    }
 
     events.forEach(event => {
       const eventName = `${typeName}Event_${event.name}`;

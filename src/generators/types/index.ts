@@ -1,5 +1,5 @@
 import {Command} from "@oclif/core";
-import {Class, Enum, TransformedValue, Value, Function} from "./json-types";
+import {Class, Enum, TransformedValue, Value, Function, getEventInheritance} from "./json-types";
 import {DeclarationBuilder} from "./builder";
 import {ListrContext} from "listr";
 import {Observable, Subscriber} from "rxjs";
@@ -39,12 +39,28 @@ export class TypesGenerator {
         task: async (ctx: ListrContext) => {
           return new Observable<string>(subscriber => {
             try {
+              let subscribeFunction: Function|undefined = undefined;
+              let unsubscribeFunction: Function|undefined = undefined;
+              for (const {file, data} of ctx["files"]) {
+                if (!file.startsWith("Enums")) {
+                  const clazz = data as Class;
+                  if (clazz.name.endsWith("Actor")) {
+                    subscribeFunction = clazz.functions.find(f => f.name.toLowerCase() === "subscribe");
+                    clazz.functions = clazz.functions.filter(f => f !== subscribeFunction);
+
+                    unsubscribeFunction = clazz.functions.find(f => f.name.toLowerCase() === "unsubscribe");
+                    clazz.functions = clazz.functions.filter(f => f !== unsubscribeFunction);
+                    break;
+                  }
+                }
+              }
+
               for (const {file, data} of ctx["files"]) {
                 if (file.startsWith("Enums")) {
                   this.generateEnums(data, subscriber);
                 } else {
                   const title = file.split("/")[0];
-                  this.generateClass(<Class>data, subscriber, title);
+                  this.generateClass(<Class>data, subscriber, title, subscribeFunction, unsubscribeFunction);
                 }
               }
 
@@ -72,13 +88,30 @@ export class TypesGenerator {
 
   }
 
-  private generateClass(c: Class, subscriber: Subscriber<string>, title: string) {
+  private generateClass(c: Class, subscriber: Subscriber<string>, title: string, subscribeFunc: Function|undefined, unsubscribeFunc: Function|undefined) {
     subscriber.next(title);
 
     const builder = this.builder(title.replace(/(?:^|\.?)([A-Z])/g, function (x,y){return "_" + y.toLowerCase()}).replace(/^_/, ""));
 
     if (c.events) {
-      builder.events(c.name, c.events);
+      const eventInheritance = getEventInheritance(c.inheritance || []);
+      builder.events(c.name, c.events, eventInheritance);
+
+      if (subscribeFunc) {
+        if (!c.static_functions) {
+          c.static_functions = [subscribeFunc];
+        } else if (!c.static_functions.find(f => f.name === subscribeFunc.name)) {
+          c.static_functions.push(subscribeFunc);
+        }
+      }
+
+      if (unsubscribeFunc) {
+        if (!c.static_functions) {
+          c.static_functions = [unsubscribeFunc];
+        } else if (!c.static_functions.find(f => f.name === unsubscribeFunc.name)) {
+          c.static_functions.push(unsubscribeFunc);
+        }
+      }
     }
 
     builder.class(c.name, c.inheritance, classProvider => {
@@ -98,7 +131,7 @@ export class TypesGenerator {
 
       if (c.properties) {
         for (const property of c.properties) {
-          const transformed = this.transformValue(property);
+          const transformed = this.transformValue(c, property);
           classProvider.prop(transformed.name, transformed.type, jsdoc => {
             jsdoc.line(transformed.description);
           });
@@ -107,7 +140,7 @@ export class TypesGenerator {
 
       if (c.constructor && c.constructor.map) {
         classProvider.function("constructor", false, ctorProvider => {
-          const transformedParams: TransformedValue[] = c.constructor!.map(param => this.transformValue(param));
+          const transformedParams: TransformedValue[] = c.constructor!.map(param => this.transformValue(c, param));
 
           ctorProvider.jsdoc(jsdoc => {
             for (const transformedParam of transformedParams) {
@@ -130,8 +163,8 @@ export class TypesGenerator {
       const generateFunctions = (isStatic: boolean, functions: Function[]) => {
         for (const f of functions) {
           classProvider.function(f.name, isStatic, funcProvider => {
-            const transformedParams: TransformedValue[] = !f.parameters ? [] : f.parameters.map(param => this.transformValue(param));
-            const transformedReturn: TransformedValue[] = !f.return ? [] : f.return.map(ret => this.transformValue(ret, true));
+            const transformedParams: TransformedValue[] = !f.parameters ? [] : f.parameters.map(param => this.transformValue(c, param, false, f.name.toLowerCase().endsWith("subscribe") && !!c.events && isStatic));
+            const transformedReturn: TransformedValue[] = !f.return ? [] : f.return.map(ret => this.transformValue(c, ret, true));
 
             funcProvider.jsdoc(jsdoc => {
               if (f.description_long || f.description) {
@@ -202,7 +235,7 @@ export class TypesGenerator {
     return this.result[name];
   }
 
-  private transformValue(value: Value, isRet: boolean = false): TransformedValue {
+  private transformValue(c: Class, value: Value, isRet: boolean = false, eventNameConv: boolean = false): TransformedValue {
     const description = value.description_long || value.description;
     let defaultValue = !value.default ? undefined : (value.default === "nil" ? "null" : value.default);
 
@@ -237,6 +270,10 @@ export class TypesGenerator {
 
     if (name === "function") {
       name = "func";
+    }
+
+    if (eventNameConv && name.toLowerCase() === "event_name") {
+      type = c.name + "Event";
     }
 
     return {
