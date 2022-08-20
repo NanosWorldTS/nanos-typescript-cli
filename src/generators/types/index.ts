@@ -64,6 +64,8 @@ export class TypesGenerator {
                 }
               }
 
+              this.generateNatives(subscriber);
+
               subscriber.complete();
             } catch (e) {
               console.error(e);
@@ -86,6 +88,19 @@ export class TypesGenerator {
       this.command.error(<Error>e);
     }
 
+  }
+
+  private generateNatives(subscriber: Subscriber<string>) {
+    subscriber.next("natives");
+
+    const builder = this.builder("natives");
+
+    builder.interface("Console", interfaceProvider => {
+      interfaceProvider.function("log", false, funcProvider => {
+        funcProvider.varargs("data", "any");
+      });
+    });
+    builder.var("console", "Console");
   }
 
   private generateClass(c: Class, subscriber: Subscriber<string>, title: string, subscribeFunc: Function|undefined, unsubscribeFunc: Function|undefined) {

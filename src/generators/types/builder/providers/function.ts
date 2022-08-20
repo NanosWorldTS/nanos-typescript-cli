@@ -8,10 +8,10 @@ export default class FunctionProvider extends Commentable {
 
   private _hasNullables: boolean = false;
 
-  public constructor(name: string, isStatic: boolean) {
+  public constructor(name: string, isStatic: boolean, access: string = "public") {
     super(true);
 
-    this.builder.append(`  public${isStatic ? ' static' : ''} ${name}(`);
+    this.builder.append(`  ${access}${isStatic ? ' static' : ''} ${name}(`);
   }
 
   public disableReturn(): FunctionProvider {
