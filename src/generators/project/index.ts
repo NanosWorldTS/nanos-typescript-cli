@@ -41,7 +41,7 @@ export class ProjectGenerator {
 
                 const createPath = async (dir: string) => {
                   await fs.promises.mkdir(p.join(path, "src", dir), { recursive: true });
-                  const filePath = p.join(path, "src", dir, "index.ts");
+                  const filePath = p.join(path, "src", dir, "Index.ts");
                   const fd = await fs.promises.open(filePath, "w");
                   await fd.close();
                 };
@@ -138,7 +138,8 @@ export class ProjectGenerator {
       devDependencies: {
         "shx": "^0.3.4",
         "typescript": "^4.6.4",
-        "typescript-to-lua": "^1.4.4"
+        "typescript-to-lua": "^1.4.4",
+        "ts-node": "^10.9.1"
       }
     };
     await fs.promises.writeFile(p.join(path, "package.json"), JSON.stringify(packageJson, null, 2));
@@ -167,7 +168,10 @@ export class ProjectGenerator {
         lib: ["esnext"],
         moduleResolution: "node",
         outDir: "./dist",
-        baseUrl: "./src",
+        baseUrl: "./",
+        paths: {
+          "*": ["@types/*"]
+        },
         types: [
           "typescript-to-lua/language-extensions"
         ],
@@ -195,44 +199,49 @@ export class ProjectGenerator {
   }
 
   private async createImportsTranspiler(path: string) {
-    const code = `
-    import * as ts from "typescript";
-    import * as tstl from "typescript-to-lua";
+    const code =
+`
+import * as ts from "typescript";
+import * as tstl from "typescript-to-lua";
+//@ts-ignore
+console.log("Imports transpiller starting");
 
-    console.log("Imports transpiller starting");
+let importMapsCount = 0;
 
-    let importMapsCount = 0;
+const plugin: tstl.Plugin = {
+    visitors: {
+        [ts.SyntaxKind.ImportDeclaration]: (node) => {
+            // Find the name of the package
+            const identifier = (node.moduleSpecifier as any).text; // Any => They hack the types so I hack the types too
+            if (identifier.toLowerCase().includes("nanosts")) {
+                return [];
+            }
 
-    const plugin: tstl.Plugin = {
-        visitors: {
-            [ts.SyntaxKind.ImportDeclaration]: (node) => {
-                ++importMapsCount;
-                const importMapName = "____importmap_"+importMapsCount;
-                // TODO: Handle default imports ( import test from "./test")
-                // TODO: Handle external Lua package with type definitions
+            ++importMapsCount;
+            const importMapName = "____importmap_"+importMapsCount;
+            // TODO: Handle default imports ( import test from "./test")
+            // TODO: Handle external Lua package with type definitions
 
-                // Find the name of the package
-                const identifier = (node.moduleSpecifier as any).text; // Any => They hack the types so I hack the types too
-                const targetModulePath = identifier + ".lua";
+            const targetModulePath = identifier + ".lua";
 
-                // List all the imports done
-                const namedBindings = (node.importClause?.namedBindings as any).elements
-                const importedVariables = namedBindings?.map((chNode) => chNode.getText());
+            // List all the imports done
+            const namedBindings = (node.importClause?.namedBindings as any).elements
+            const importedVariables = namedBindings?.map((chNode) => chNode.getText());
 
-                // Create LUA AST Nodes
-                const packageRequireAssignToImportMap = tstl.createVariableDeclarationStatement(tstl.createIdentifier(importMapName), tstl.createIdentifier(\`Package.Require("\${targetModulePath}")\`))
-                const finalNamedImportsVariables = importedVariables.map((varName) => {
-                    return tstl.createVariableDeclarationStatement(tstl.createIdentifier(varName), tstl.createIdentifier(importMapName + "." + varName))
-                })
-                return [packageRequireAssignToImportMap, ...finalNamedImportsVariables];
-            },
-        }
+            // Create LUA AST Nodes
+            const packageRequireAssignToImportMap = tstl.createVariableDeclarationStatement(tstl.createIdentifier(importMapName), tstl.createIdentifier(\`Package.Require("\${targetModulePath}")\`))
+            const finalNamedImportsVariables = importedVariables.map((varName) => {
+                return tstl.createVariableDeclarationStatement(tstl.createIdentifier(varName), tstl.createIdentifier(importMapName + "." + varName))
+            })
+            return [packageRequireAssignToImportMap, ...finalNamedImportsVariables];
+        },
     }
+}
+//@ts-ignore
+console.log("Imports transpiller done");
 
-    console.log("Imports transpiller done");
+export default plugin;`;
 
-    export default plugin;
-    `;
     await fs.promises.writeFile(p.join(path, "transpilers", "imports.ts"), code);
   }
 }
