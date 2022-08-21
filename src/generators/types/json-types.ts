@@ -34,6 +34,23 @@ export function getEventInheritance(inheritances: string[]): string|undefined {
   return "Actor";
 }
 
+export function getOperatorType(operator: string): string|null {
+  switch (operator) {
+    case "__add":
+      return "LuaAddition";
+    case "__sub":
+      return "LuaSubtraction";
+    case "__mul":
+      return "LuaMultiplication";
+    case "__div":
+      return "LuaDivision";
+    case "__pow":
+      return "LuaPower";
+    default:
+      return null;
+  }
+}
+
 export interface Enum {
   [name: string]: ({
     key: string;

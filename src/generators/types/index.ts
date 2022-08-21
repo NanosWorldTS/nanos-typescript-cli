@@ -1,5 +1,5 @@
 import {Command} from "@oclif/core";
-import {Class, Enum, TransformedValue, Value, Function, getEventInheritance} from "./json-types";
+import {Class, Enum, TransformedValue, Value, Function, getEventInheritance, getOperatorType} from "./json-types";
 import {DeclarationBuilder} from "./builder";
 import {ListrContext} from "listr";
 import {Observable, Subscriber} from "rxjs";
@@ -222,6 +222,26 @@ export class TypesGenerator {
         generateFunctions(true, c.static_functions);
       }
     });
+
+    if (c.operators) {
+      for (const operator of c.operators) {
+        const type = getOperatorType(operator.operator);
+        if (!type) continue;
+
+        for (const lhs of operator.lhs.split("|")) {
+          for (const rhs of operator.rhs.split("|")) {
+            if (lhs.toLowerCase() === "number" && rhs.toLowerCase() === "number") {
+              continue;
+            }
+
+            const formattedLhs = lhs.charAt(0).toUpperCase() + lhs.slice(1);
+            const formattedRhs = rhs.charAt(0).toUpperCase() + rhs.slice(1);
+            const name = `${operator.operator.replace("__", "")}${formattedLhs}${formattedRhs}`;
+            builder.const(name, `${type}<${lhs}, ${rhs}, ${operator.return}>`);
+          }
+        }
+      }
+    }
   }
 
   private generateEnums(enums: Enum, subscriber: Subscriber<string>) {

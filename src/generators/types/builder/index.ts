@@ -32,6 +32,11 @@ export class DeclarationBuilder {
     return this;
   }
 
+  public const(name: string, type: string): DeclarationBuilder {
+    this.builder.append(`declare const ${name}: ${type};`).newLine();
+    return this;
+  }
+
   public class(name: string, inheritance: string[]|undefined, cb: (classProvider: ClassProvider) => void): DeclarationBuilder {
     const classProvider = new ClassProvider(name, inheritance || []);
     cb(classProvider);
