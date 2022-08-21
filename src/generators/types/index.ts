@@ -68,7 +68,6 @@ export class TypesGenerator {
 
               subscriber.complete();
             } catch (e) {
-              console.error(e);
               subscriber.error(e);
             }
           });
@@ -87,7 +86,6 @@ export class TypesGenerator {
     } catch (e) {
       this.command.error(<Error>e);
     }
-
   }
 
   private generateNatives(subscriber: Subscriber<string>) {

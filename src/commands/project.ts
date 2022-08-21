@@ -35,40 +35,40 @@ export class ProjectCommand extends Command {
         return null;
       }
 
-      const author = <string>flags.author;
+      const author = <string>flags.author.toString();
       if (!author || author.trim().length <= 0) {
         this.error("You must specify the author of the project!");
         return null;
       }
 
-      const version = <string>flags.version;
+      const version = <string>flags.version.toString();
       if (!version || version.trim().length <= 0) {
         this.error("You must specify the version of the project!");
         return null;
       }
 
-      const type = <ProjectType>flags.type;
+      const type = <ProjectType>flags.type.toString();
       if (type !== "script" && type !== "game-mode" && type !== "loading-screen") {
         this.error("Invalid type of project!");
         return null;
       }
 
-      const scriptFolders = <ScriptFolder[]>(<string>flags.scriptFolders||"").split(",");
+      const scriptFolders = <ScriptFolder[]>(<string>flags.scriptFolders?.toString()||"").split(",");
       return {name, author, version, type, scriptFolders};
 
     } else {
 
-      const author = <string>await inquirer.prompt([{
+      const {author} = (await inquirer.prompt([{
         name: 'author',
         message: 'enter name of author',
         type: 'input'
-      }]);
+      }]));
       if (!author || author.trim().length <= 0) {
         this.error("You must specify the author of the project!");
         return null;
       }
 
-      const version = <string>await inquirer.prompt([{
+      const {version} = await inquirer.prompt([{
         name: 'version',
         message: 'enter version',
         type: 'input',
@@ -79,18 +79,18 @@ export class ProjectCommand extends Command {
         return null;
       }
 
-      const type = <ProjectType>await inquirer.prompt([{
+      const {type} = await inquirer.prompt([{
         name: 'type',
         message: 'select a type',
         type: 'list',
         choices: [{name: "script"}, {name: "game-mode"}, {name: "loading-screen"}]
       }]);
-      const scriptFolders = <ScriptFolder[]>await inquirer.prompt([{
+      const scriptFolders = <ScriptFolder[]>(await inquirer.prompt([{
         name: 'script folders',
         message: 'select script folders, which will be created',
         type: 'checkbox',
         choices: [{name: "server"}, {name: "client"}, {name: "shared"}]
-      }]);
+      }]))["script folders"];
       return {name, author, version, type, scriptFolders};
     }
   }
