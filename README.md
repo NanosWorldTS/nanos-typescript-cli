@@ -7,12 +7,6 @@ official NanosTypescript CLI
 * [Usage](#usage)
 * [Commands](#commands)
 <!-- tocstop -->
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
 # Usage
 <!-- usage -->
 ```sh-session
@@ -27,17 +21,7 @@ USAGE
 ...
 ```
 <!-- usagestop -->
-```sh-session
-$ npm install -g nanosts
-$ nanosts COMMAND
-running command...
-$ nanosts (--version)
-nanosts/1.0.0 win32-x64 node-v16.15.0
-$ nanosts --help [COMMAND]
-USAGE
-  $ nanosts COMMAND
-...
-```
+
 # Commands
 <!-- commands -->
 * [`nanosts generate`](#nanosts-generate)
