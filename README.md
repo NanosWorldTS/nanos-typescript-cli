@@ -17,7 +17,7 @@ $ npm install -g nanosts
 $ nanosts COMMAND
 running command...
 $ nanosts (--version)
-nanosts/1.0.2 win32-x64 node-v16.15.0
+nanosts/1.1.0 win32-x64 node-v16.15.0
 $ nanosts --help [COMMAND]
 USAGE
   $ nanosts COMMAND
@@ -60,7 +60,7 @@ DESCRIPTION
   Generates Nanos TypeScript declarations from the Docs JSON API
 ```
 
-_See code: [dist/commands/generate.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.0.2/dist/commands/generate.ts)_
+_See code: [dist/commands/generate.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.1.0/dist/commands/generate.ts)_
 
 ## `nanosts help [COMMAND]`
 
@@ -88,13 +88,14 @@ Creates a new Nanos TypeScript project
 
 ```
 USAGE
-  $ nanosts project [NAME] [-a <value>] [-v <value>] [-t <value>] [-s <value>]
+  $ nanosts project [NAME] [-a <value>] [-v <value>] [-t <value>] [-s <value>] [-l]
 
 ARGUMENTS
   NAME  Name of the project
 
 FLAGS
   -a, --author=<value>         Author of the project
+  -l, --lazy                   Enable lazy compiling which auto-generates bridge scripts for the dist folder
   -s, --scriptFolders=<value>  Script folders of the project
   -t, --type=<value>           Type of the project
   -v, --version=<value>        [default: 1.0.0] Version of the project
@@ -103,7 +104,7 @@ DESCRIPTION
   Creates a new Nanos TypeScript project
 ```
 
-_See code: [dist/commands/project.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.0.2/dist/commands/project.ts)_
+_See code: [dist/commands/project.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.1.0/dist/commands/project.ts)_
 <!-- commandsstop -->
 * [`nanosts generate`](#nanosts-generate)
 * [`nanosts help [COMMAND]`](#nanosts-help-command)
