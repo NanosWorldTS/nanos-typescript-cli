@@ -13,6 +13,7 @@ export class ProjectCommand extends Command {
     version: Flags.string({description: "Version of the project", char: "v", default: "1.0.0"}),
     type: Flags.string({description: "Type of the project", char: "t"}),
     scriptFolders: Flags.string({description: "Script folders of the project", char: "s"}),
+    lazy: Flags.boolean({description: "Enable lazy compiling which auto-generates bridge scripts for the dist folder", char: "l", default: true}),
   };
 
   async run() {
@@ -54,7 +55,8 @@ export class ProjectCommand extends Command {
       }
 
       const scriptFolders = <ScriptFolder[]>(<string>flags.scriptFolders?.toString()||"").split(",");
-      return {name, author, version, type, scriptFolders};
+      const lazy = <boolean>flags.lazy;
+      return {name, author, version, type, scriptFolders, lazy};
 
     } else {
 
@@ -85,13 +87,22 @@ export class ProjectCommand extends Command {
         type: 'list',
         choices: [{name: "script"}, {name: "game-mode"}, {name: "loading-screen"}]
       }]);
+
       const scriptFolders = <ScriptFolder[]>(await inquirer.prompt([{
         name: 'script folders',
         message: 'select script folders, which will be created',
         type: 'checkbox',
         choices: [{name: "server"}, {name: "client"}, {name: "shared"}]
       }]))["script folders"];
-      return {name, author, version, type, scriptFolders};
+
+      const {lazy} = await inquirer.prompt([{
+        name: 'lazy',
+        message: 'enable lazy loading',
+        type: 'confirm',
+        default: true
+      }]);
+
+      return {name, author, version, type, scriptFolders, lazy};
     }
   }
 }

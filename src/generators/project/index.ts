@@ -16,6 +16,7 @@ export interface ProjectData {
   version: string;
   type: ProjectType;
   scriptFolders: ScriptFolder[];
+  lazy: boolean;
 }
 
 export class ProjectGenerator {
@@ -59,6 +60,27 @@ export class ProjectGenerator {
                 if (this.data.scriptFolders.includes("client")) {
                   subscriber.next("Client folder");
                   await createPath("Client");
+                }
+
+                if (this.data.lazy) {
+                  subscriber.next("Lazy scripts");
+                  const createLazyScript = async (name: string) => {
+                    await fs.promises.mkdir(p.join(path, name), { recursive: true });
+                    const filePath = p.join(path, name, "Index.lua");
+                    await fs.promises.writeFile(filePath, `Package.Require(\"../dist/${name}/Index.lua\")`);
+                  };
+
+                  if (this.data.scriptFolders.includes("server")) {
+                    await createLazyScript("Server");
+                  }
+
+                  if (this.data.scriptFolders.includes("shared")) {
+                    await createLazyScript("Shared");
+                  }
+
+                  if (this.data.scriptFolders.includes("client")) {
+                    await createLazyScript("Client");
+                  }
                 }
 
                 subscriber.complete();
@@ -129,19 +151,23 @@ export class ProjectGenerator {
   }
 
   private async createPackageJson(path: string) {
-    const packageJson = {
+    const packageJson: any = {
       private: true,
       scripts: {
-        build: "tstl && shx cp Package.toml dist/Package.toml",
+        build: `tstl${(this.data.lazy ? '' : ' && shx cp Package.toml dist/Package.toml')}`,
         "update-types": "nanosts generate -o=./@types",
       },
       devDependencies: {
-        "shx": "^0.3.4",
         "typescript": "^4.6.4",
         "typescript-to-lua": "^1.4.4",
         "ts-node": "^10.9.1"
       }
     };
+
+    if (!this.data.lazy) {
+      packageJson.devDependencies["shx"] = "^0.3.4";
+    }
+
     await fs.promises.writeFile(p.join(path, "package.json"), JSON.stringify(packageJson, null, 2));
   }
 
@@ -173,7 +199,7 @@ export class ProjectGenerator {
           "*": ["@types/*"]
         },
         types: [
-          "typescript-to-lua/language-extensions"
+          "@typescript-to-lua/language-extensions"
         ],
         typeRoots: [
           "./node_modules/@types", "./@types"
@@ -183,6 +209,7 @@ export class ProjectGenerator {
       tstl: {
         luaTarget: "universal",
         luaLibImport: "inline",
+        noImplicitSelf: true,
         luaPlugins: [
           {name: "./transpilers/imports.ts"}
         ]
