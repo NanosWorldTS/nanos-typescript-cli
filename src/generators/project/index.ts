@@ -7,7 +7,7 @@ import {TypesGenerator} from "../types";
 const Listr = require("listr");
 const {exec} = require("child_process");
 
-export type ProjectType = "script"|"game-mode"|"loading-screen";
+export type ProjectType = "script"|"game-mode"|"loading-screen"|"library";
 export type ScriptFolder = "server"|"client"|"shared";
 
 export interface ProjectData {
