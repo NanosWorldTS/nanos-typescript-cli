@@ -85,7 +85,7 @@ export class ProjectCommand extends Command {
         name: 'type',
         message: 'select a type',
         type: 'list',
-        choices: [{name: "script"}, {name: "game-mode"}, {name: "loading-screen"}]
+        choices: [{name: "script"}, {name: "game-mode"}, {name: "loading-screen"}, {name: "library"}]
       }]);
 
       const scriptFolders = <ScriptFolder[]>(await inquirer.prompt([{
