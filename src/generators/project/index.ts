@@ -154,7 +154,6 @@ export class ProjectGenerator {
       devDependencies: {
         "typescript": "^4.6.4",
         "typescript-to-lua": "^1.4.4",
-        "ts-node": "^10.9.1",
         "nanosts-imports-transpiler": "^0.0.2"
       }
     };
