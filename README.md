@@ -17,7 +17,7 @@ $ npm install -g nanosts
 $ nanosts COMMAND
 running command...
 $ nanosts (--version)
-nanosts/1.2.0 win32-x64 node-v16.15.0
+nanosts/1.2.1 win32-x64 node-v16.15.0
 $ nanosts --help [COMMAND]
 USAGE
   $ nanosts COMMAND
@@ -60,7 +60,7 @@ DESCRIPTION
   Generates Nanos TypeScript declarations from the Docs JSON API
 ```
 
-_See code: [dist/commands/generate.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.2.0/dist/commands/generate.ts)_
+_See code: [dist/commands/generate.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.2.1/dist/commands/generate.ts)_
 
 ## `nanosts help [COMMAND]`
 
@@ -104,7 +104,7 @@ DESCRIPTION
   Creates a new Nanos TypeScript project
 ```
 
-_See code: [dist/commands/project.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.2.0/dist/commands/project.ts)_
+_See code: [dist/commands/project.ts](https://github.com/NanosWorldTS/nanos-typescript-cli/blob/v1.2.1/dist/commands/project.ts)_
 <!-- commandsstop -->
 * [`nanosts generate`](#nanosts-generate)
 * [`nanosts help [COMMAND]`](#nanosts-help-command)
