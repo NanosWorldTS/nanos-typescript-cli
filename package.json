@@ -54,10 +54,9 @@
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts --config .eslintrc",
     "postpack": "shx rm -f oclif.manifest.json",
-    "posttest": "yarn lint",
-    "prepack": "yarn build && oclif manifest",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
-    "version": "oclif readme && git add README.md"
+    "posttest": "npm lint",
+    "prepack": "oclif readme && git add README.md && npm run build && oclif manifest",
+    "test": "mocha --forbid-only \"test/**/*.test.ts\""
   },
   "engines": {
     "node": ">=12.0.0"
