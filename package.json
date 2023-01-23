@@ -19,7 +19,7 @@
   "dependencies": {
     "@oclif/core": "^1.13.10",
     "@oclif/plugin-help": "^5",
-    "inquirer": "8.0.0",
+    "inquirer": "8.2.5",
     "listr": "^0.14.3",
     "node-fetch": "2",
     "rxjs": "^7.5.6"
